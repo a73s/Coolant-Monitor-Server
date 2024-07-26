@@ -1,0 +1,3 @@
+[submodule "mdns_cpp-color"]
+	path = mdns_cpp-color
+	url = https://github.com/a73s/mdns_cpp-color

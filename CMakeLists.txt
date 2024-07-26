@@ -24,7 +24,7 @@ set(CMAKE_CXX_FLAGS_RELEASE_INIT "-Wall -W -pedantic-errors -s -static -O3")
 # add_compile_options(-fno-omit-frame-pointer)
 # add_link_options(-fno-omit-frame-pointer)
 
-add_subdirectory(deps/mdns_cpp-color)
+add_subdirectory(mdns_cpp-color)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
