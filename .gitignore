@@ -1,0 +1,10 @@
+.vscode
+.clangd
+.cache
+build
+**/launch.json
+**/*.cmake
+**/Makefile
+**/cmake_install.cmake
+**/CMakeFiles
+**/CMakeCache.txt
