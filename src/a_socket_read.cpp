@@ -14,6 +14,8 @@ using std::cout; using std::endl;
 // to set up buff to contain only the most recent newline-seperated "message"
 // remnants of an incomplete message should be stored in messageBuff,
 // the number of bytes in buff is returned through ret_messageSize
+//
+// There is an assumption that the message is text so anything after the first null byte will be cut off
 inline bool manageMessageBuffers(char * const messageBuff, uint32_t messagebuffmax, asio::mutable_buffer * const buff, size_t readsize, uint16_t & ret_messageSize){
 
 	//sorry but this is a doozy
@@ -38,7 +40,8 @@ inline bool manageMessageBuffers(char * const messageBuff, uint32_t messagebuffm
 
 	mbufflen += readsize;
 
-	assert(mbufflen == strlen(messageBuff));
+	// assert(mbufflen == strlen(messageBuff));
+	mbufflen = strlen(messageBuff);
 
 	// identify the last full message by finding final newline
 	int16_t lastNewlineCharIndex = -1;
