@@ -144,8 +144,8 @@ int a_socket_rw::num_new_buffers() {
 void a_socket_rw::async_write(void const * const buff, size_t size_bytes) {
 
 	void * const newBuffPtr = new uint8_t[size_bytes];
-	for(int i = 0; i < size_bytes; i++){
-		static_cast<uint8_t * const>(newBuffPtr)[i] = static_cast<uint8_t const * const>(buff)[i];
+	for(size_t i = 0; i < size_bytes; i++){
+		static_cast<uint8_t *>(newBuffPtr)[i] = static_cast<uint8_t const *>(buff)[i];
 	}
 	
 	asio::const_buffer * buffptr = new asio::const_buffer(newBuffPtr, size_bytes);
@@ -163,6 +163,10 @@ void a_socket_rw::async_write(void const * const buff, size_t size_bytes) {
 				case 0: {//success
 
 					this->TimeOfLastMsg = time(NULL);
+					if(sendsize != buffptr->size()){
+
+						cout << "Data sent was less than expected, sendsize: " << sendsize << ", buffsize:" << buffptr->size() << endl;
+					}
 
 					break;
 				}

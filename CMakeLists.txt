@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.20)
 
 project("Coolant Monitor Server"
 	DESCRIPTION "Socket server for esp32 coolant monitor"
@@ -11,31 +11,26 @@ file(GLOB SOURCE_FILES
 	./src/*.hpp
 	)
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 add_subdirectory(mdns_cpp)
 
-# find_package(asio REQUIRED)
-# find_package(ncurses REQUIRED)
+set(CMAKE_CXX_FLAGS "-Wall -Wextra -g")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -fsanitize=address -fno-omit-frame-pointer")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+
+# ensure that you get release mode by default
+if("${CMAKE_BUILD_TYPE}" STREQUAL "")
+	set(CMAKE_BUILD_TYPE "Release")
+endif()
 
 add_executable(serverMonitor ${SOURCE_FILES})
 target_link_libraries(serverMonitor PRIVATE mdns_cpp::mdns_cpp)
 target_link_libraries(serverMonitor PRIVATE ncurses)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-add_compile_options(-Wall -W -pedantic-errors -static -g)
-add_link_options(-Wall -W -pedantic-errors -static -g)
-
-if("${build_mode}" STREQUAL "Debug")
-	add_compile_options(-fsanitize=address)
-	add_link_options(-fsanitize=address)
-	add_compile_options(-fno-omit-frame-pointer)
-	add_link_options(-fno-omit-frame-pointer)
-else()
-	add_compile_options("-O3")
-	# add_link_options("")
-endif()
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 include(GNUInstallDirs)
 install(TARGETS serverMonitor DESTINATION "${CMAKE_INSTALL_BINDIR}")

@@ -45,7 +45,7 @@ int main() {
 		uint32_t ID = 0;
 		std::string name = "";
 		if(readStr == "") continue;
-		for(int i = 0; i < readStr.size(); i++){
+		for(size_t i = 0; i < readStr.size(); i++){
 			if(readStr[i] == ':'){
 				ID = stoul(readStr.substr(0, i), nullptr, 0);
 				name = readStr.substr(i+1);
@@ -68,6 +68,7 @@ int main() {
 		SIGINT,
 		[](int signum){
 			sigintFlag = true;// stopThreads = true;
+			std::cerr << signum;
 		}
 	);
 	std::thread ioConThr(
@@ -92,7 +93,8 @@ int main() {
 		while(sockManv4.num_new_sockets() > 0){
 
 			cout << "Main: New Socket" << endl;
-			a_socket_rw* tmp = new a_socket_rw(std::move(sockManv4.pop_socket_back()));
+			// a_socket_rw* tmp = new a_socket_rw(std::move(sockManv4.pop_socket_back()));
+			a_socket_rw* tmp = new a_socket_rw(sockManv4.pop_socket_back());
 			sockReads.push_back(tmp);
 		}
 
@@ -114,7 +116,7 @@ int main() {
 		}
 
 		//Read from sockets, also check/assign ID
-		for(int i = 0; i < sockReads.size(); i++){
+		for(size_t i = 0; i < sockReads.size(); i++){
 			asio::mutable_buffer * buffp = nullptr;
 			bool isFirstRead = sockReads[i]->isFirstRead;
 			// If there is no buffer to read then this will just give us nullptr on buffp
@@ -126,7 +128,7 @@ int main() {
 
 
 				std::string num = "";
-				for(int i = 0; i < buffSize; i++){
+				for(size_t i = 0; i < buffSize; i++){
 					
 					if(!isdigit(static_cast<char*>(buffp->data())[i])) continue;
 					num.push_back( static_cast<char*>( buffp->data() )[i] );
