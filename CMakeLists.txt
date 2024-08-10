@@ -23,7 +23,15 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(CURSES REQUIRED IMPORTED_TARGET ncurses)
 pkg_check_modules(ASIO REQUIRED IMPORTED_TARGET asio)
 
-add_subdirectory(mdns_cpp)
+find_package(mdns_cpp QUIET)
+if(NOT mdns_cpp_FOUND)
+	message("mdns_cpp not found, installing locally")
+	execute_process(
+		COMMAND git submodule update --init -- mdns_cpp
+		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+	)
+	add_subdirectory(mdns_cpp)
+endif()
 
 # ensure that you get release mode by default
 if("${CMAKE_BUILD_TYPE}" STREQUAL "")
