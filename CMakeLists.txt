@@ -9,26 +9,34 @@ file(GLOB SOURCE_FILES
 	./src/*.cpp
 	./src/*.h
 	./src/*.hpp
+	# ./src/**/*.cpp
+	# ./src/**/*.h
+	# ./src/**/*.hpp
 	)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-add_subdirectory(mdns_cpp)
+find_package(PkgConfig REQUIRED)
 
-set(CMAKE_CXX_FLAGS "-Wall -Wextra -g")
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -fsanitize=address -fno-omit-frame-pointer")
-set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+pkg_check_modules(CURSES REQUIRED IMPORTED_TARGET ncurses)
+pkg_check_modules(ASIO REQUIRED IMPORTED_TARGET asio)
+
+add_subdirectory(mdns_cpp)
 
 # ensure that you get release mode by default
 if("${CMAKE_BUILD_TYPE}" STREQUAL "")
 	set(CMAKE_BUILD_TYPE "Release")
 endif()
 
+set(CMAKE_CXX_FLAGS "-Wall -Wextra -g")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -fsanitize=address -fno-omit-frame-pointer")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+
 add_executable(serverMonitor ${SOURCE_FILES})
-target_link_libraries(serverMonitor PRIVATE mdns_cpp::mdns_cpp)
-target_link_libraries(serverMonitor PRIVATE ncurses)
+# target_link_libraries(serverMonitor PRIVATE mdns_cpp::mdns_cpp ncurses)
+target_link_libraries(serverMonitor PRIVATE mdns_cpp::mdns_cpp PkgConfig::CURSES)
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
