@@ -3,6 +3,7 @@
 .cache
 build
 debug
+extern/mdns_cpp/*
 **/launch.json
 **/*.cmake
 **/Makefile
