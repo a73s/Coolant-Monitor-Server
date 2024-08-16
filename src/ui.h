@@ -15,9 +15,9 @@ public:
 	void update();
 
 	void printo(char const * const str);
-	void printo(char * && str);
 	void printo(std::string str);
-	void printo(std::string && str);
+	void printoImmediate(char const * const str);
+	void printoImmediate(std::string str);
 	
 	~cursesUi();
 

@@ -40,6 +40,7 @@ endif()
 
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -g")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -fsanitize=address -fno-omit-frame-pointer")
+# set(CMAKE_CXX_FLAGS_DEBUG "-O0")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
 add_executable(serverMonitor ${SOURCE_FILES})

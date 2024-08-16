@@ -11,13 +11,15 @@
 #include "asio/ip/tcp.hpp"
 
 #include "mdns_cpp/mdns.hpp"
+#include "mdns_cpp/logger.hpp"
 
 #include "a_socket_find.h"
 #include "a_socket_read.h"
+#include "ui.h"
 #include "utils.h"
 
-using std::cout;
-using std::endl;
+// using std::cout;
+// using std::endl;
 using tcpip = asio::ip::tcp;
 
 constexpr uint16_t PORT = 46239;
@@ -32,6 +34,7 @@ int main() {
 	// INIT stuff
 
 	// read device IDs from file
+	cursesUi ui;
 	std::ifstream IDsFileR("IDs");
 	std::map<uint32_t, std::string> IDs;
 
@@ -79,6 +82,11 @@ int main() {
 	);
 
 	// start mdns
+	mdns_cpp::Logger::setLoggerSink(
+		[&ui](std::string str){
+			ui.printo(str);
+		}
+	);
 	mdns_cpp::mDNS mdns;
 	mdns.setServicePort(PORT);
 	mdns.setServiceHostname("ESP32CoolandtMonitorServer");
@@ -92,7 +100,8 @@ int main() {
 
 		while(sockManv4.num_new_sockets() > 0){
 
-			cout << "Main: New Socket" << endl;
+			// cout << "Main: New Socket" << endl;
+			ui.printo("Main: New Socket\n");
 			// a_socket_rw* tmp = new a_socket_rw(std::move(sockManv4.pop_socket_back()));
 			a_socket_rw* tmp = new a_socket_rw(sockManv4.pop_socket_back());
 			sockReads.push_back(tmp);
@@ -102,7 +111,8 @@ int main() {
 		for(auto it = sockReads.begin(); it != sockReads.end(); ){
 			if((*it)->is_closing()){
 
-				cout << "Deleting socket " << i << endl;
+				// cout << "Deleting socket " << i << endl;
+				ui.printo("Deleting socket " + std::to_string(i) + "\n");
 				a_socket_rw * tmp = *it;
 				sockReads.erase(it);
 				delete tmp;
@@ -126,7 +136,6 @@ int main() {
 
 			if(isFirstRead){
 
-
 				std::string num = "";
 				for(size_t i = 0; i < buffSize; i++){
 					
@@ -138,7 +147,8 @@ int main() {
 				if(num.size() > 0){
 					receivedID = std::stol(num);
 				}
-				cout << "receivedID: " << receivedID << endl;
+				// cout << "receivedID: " << receivedID << endl;
+				ui.printo("receivedID: " + std::to_string(receivedID) + "\n");
 
 				if(receivedID == 0 || IDs.find(receivedID) == IDs.end()){
 					uint32_t randNum = 0;
@@ -153,14 +163,16 @@ int main() {
 					IDsFileW.flush();
 
 					assert(IDs.emplace(randNum, "NULL").second);
-					cout << "New ID: " << randNum << ", With name: NULL" << endl;
+					// cout << "New ID: " << randNum << ", With name: NULL" << endl;
+					ui.printo("New ID: "+std::to_string(randNum)+", With name: NULL\n");
 
 				}else{
 
 					sockReads[i]->async_write(&receivedID, sizeof(uint32_t)); // echo the Device ID that was received
 				}
 			}else{
-				cout << "Main, Message: " << static_cast<char*>(buffp->data());
+				// cout << "Main, Message: " << static_cast<char*>(buffp->data());
+				ui.printo("Main, Message: " + std::string(static_cast<char*>(buffp->data())));
 				assert(strcmp((char*)buffp->data(), "<420,20.019199,5.232000\n") == 0);
 			}
 			free_buffer(buffp);
@@ -169,11 +181,13 @@ int main() {
 		//check for Ctrl-c aka sigint
 		if(sigintFlag){
 			mainRet = 0;
-			cout << "SIGINT Received, shutting down" << endl;
+			// cout << "SIGINT Received, shutting down" << endl;
+			ui.printo("SIGINT Received, shutting down");
 			break;
 		}
 
 		fflush(stdout);
+		ui.update();
 
 		std::clock_t current = std::clock();
 		std::clock_t tdiff = current - loopTime;
@@ -205,12 +219,15 @@ int main() {
 
 	//deinit
 	ioContext.stop();
-	cout << "Stopping network service" << endl;
+	// cout << "Stopping network service" << endl;
+	ui.printoImmediate("Stopping network servicen\n");
 	ioConThr.join();
 
-	cout << "Stopping mdns service" << endl;
+	// cout << "Stopping mdns service" << endl;
+	ui.printoImmediate("Stopping mdns servicen\n");
 	mdnsStopTh.join();
-	cout << "Mdns service stopped" << endl;
+	// cout << "Mdns service stopped" << endl;
+	ui.printoImmediate("Mdns service stopped\n");
 
 	return mainRet;
 }
