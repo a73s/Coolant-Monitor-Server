@@ -1,6 +1,9 @@
+#include <cassert>
 #include <cstring>
+#include <iostream>
 #include <ncurses.h>
 #include <string>
+#include <cstring>
 
 #include "ui.h"
 
@@ -8,12 +11,15 @@ cursesUi::cursesUi(){
 
 	initscr();
 	noecho();
+	cbreak();
+	// scrollok(stdscr, true);
+	nodelay(stdscr, true);
 	currentCols = COLS;
 	currentLines = LINES;
 
 	commandWin = newwin(LINES, COLS/2, 0, 0);
-
 	outputWin = newwin(LINES, COLS/2, 0, COLS/2 );
+	nameInputWin = newwin(NAME_INPUT_BOX_HEIGHT, NAME_INPUT_BOX_WIDTH, (LINES/2)-(NAME_INPUT_BOX_HEIGHT/2), (COLS/2)-(NAME_INPUT_BOX_WIDTH/2));
 
 	changedSinceUpdate = true;
 	update();
@@ -37,12 +43,50 @@ void cursesUi::update(){
 	if(tmpcols != currentCols || tmplines != currentLines){
 		resize_helper(tmpcols, tmplines);
 	}
-	
+
+	char newchar = -1;
+
+	newchar = getch();
+	while(newchar != ERR){
+		changedSinceUpdate = true;
+
+		switch(newchar){
+			case 127:
+			case '\b':{
+				if(namestr.size()){
+					namestr.pop_back();
+				}
+				break;
+			}
+			case '\n':{
+				nameQueue.front().set_value(namestr);
+				nameQueue.erase(nameQueue.begin());
+				namestr = "";
+				break;
+			}
+			default:{
+				if(namestr.size() == MAX_NAME_LEN){
+					break;
+				}else if(isalnum(newchar)){
+					namestr += newchar;
+				}else{
+					std::cout << "unexpected character in input buffer: " << newchar << std::endl;
+				}
+				break;
+			}
+		}
+
+		newchar = getch();
+	}
+
+	assert(newchar == ERR);
+
 	if(!changedSinceUpdate) return;
 
 	clear();
 	wclear(outputWin);
 	wclear(commandWin);
+	wclear(nameInputWin);
 	
 	int printlinenum = 1;
 	int i = numOutputStrs-1;
@@ -59,9 +103,24 @@ void cursesUi::update(){
 	mvwprintw(commandWin, 0, 1, "Command");
 	mvwprintw(outputWin, 0, 1, "Output");
 
+	if(nameQueue.size()){
+		box(nameInputWin, 0, 0);
+		mvwprintw(nameInputWin, 0, 1, "Device Name Input");
+		mvwprintw(nameInputWin, 1, 1, "%s", namestr.c_str());
+		move((currentLines/2)-(NAME_INPUT_BOX_HEIGHT/2)+1, (currentCols/2)-(NAME_INPUT_BOX_WIDTH/2)+1+namestr.size());
+	}else{
+		move(currentLines, 1);
+	}
+
 	refresh();
-	wrefresh(outputWin);
-	wrefresh(commandWin);
+	// wrefresh(outputWin);
+	// wrefresh(commandWin);
+	// if(nameQueue.size()) wrefresh(nameInputWin);
+	wnoutrefresh(outputWin);
+	wnoutrefresh(commandWin);
+	if(nameQueue.size()) wnoutrefresh(nameInputWin);
+	doupdate();
+
 
 	changedSinceUpdate = false;
 }
@@ -108,12 +167,23 @@ void cursesUi::printoImmediate(std::string str){
 	printo(str);
 	update();
 }
+std::future<std::string> cursesUi::getDeviceName(){
+
+	std::promise<std::string> namePromise;
+	std::future<std::string> tmpFut = namePromise.get_future();
+	nameQueue.push_back(std::move(namePromise));
+	changedSinceUpdate = true;
+
+	return tmpFut;
+}
 
 void cursesUi::resize_helper(int cols, int lines){
 
 	wresize(commandWin, lines, (cols/2));
 	wresize(outputWin, lines, (cols/2));
+	wresize(nameInputWin, NAME_INPUT_BOX_HEIGHT, NAME_INPUT_BOX_WIDTH);
 	mvwin(outputWin, 0, cols/2);
+	mvwin(nameInputWin, (lines/2)-(NAME_INPUT_BOX_HEIGHT/2), (cols/2)-(NAME_INPUT_BOX_WIDTH/2));
 	currentLines = lines;
 	currentCols = cols;
 	changedSinceUpdate = true;

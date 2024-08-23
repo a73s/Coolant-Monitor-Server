@@ -7,6 +7,7 @@
 #include <string>
 #include <map>
 #include <ctime>
+#include <future>
 
 #include "asio/ip/tcp.hpp"
 
@@ -37,6 +38,7 @@ int main() {
 	cursesUi ui;
 	std::ifstream IDsFileR("IDs");
 	std::map<uint32_t, std::string> IDs;
+	std::vector<std::future<std::string>> nameFutures;
 
 	std::string readStr = "";
 	
@@ -54,12 +56,13 @@ int main() {
 				name = readStr.substr(i+1);
 			}
 		}
+		if(name == "NULL"){
+			nameFutures.push_back(ui.getDeviceName());
+		}
 		IDs.emplace(ID, name);
 	}
 	
 	IDsFileR.close();
-	std::ofstream IDsFileW;
-	IDsFileW.open("IDs", std::ios::app);
 
 	srand(time(NULL));
 	int mainRet = 0;
@@ -76,9 +79,9 @@ int main() {
 	);
 	std::thread ioConThr(
 		[&ioContext](){
-		ioContext.run();
-		return;
-	}
+			ioContext.run();
+			return;
+		}
 	);
 
 	// start mdns
@@ -87,6 +90,7 @@ int main() {
 			ui.printo(str);
 		}
 	);
+
 	mdns_cpp::mDNS mdns;
 	mdns.setServicePort(PORT);
 	mdns.setServiceHostname("ESP32CoolandtMonitorServer");
@@ -100,9 +104,7 @@ int main() {
 
 		while(sockManv4.num_new_sockets() > 0){
 
-			// cout << "Main: New Socket" << endl;
 			ui.printo("Main: New Socket\n");
-			// a_socket_rw* tmp = new a_socket_rw(std::move(sockManv4.pop_socket_back()));
 			a_socket_rw* tmp = new a_socket_rw(sockManv4.pop_socket_back());
 			sockReads.push_back(tmp);
 		}
@@ -111,7 +113,6 @@ int main() {
 		for(auto it = sockReads.begin(); it != sockReads.end(); ){
 			if((*it)->is_closing()){
 
-				// cout << "Deleting socket " << i << endl;
 				ui.printo("Deleting socket " + std::to_string(i) + "\n");
 				a_socket_rw * tmp = *it;
 				sockReads.erase(it);
@@ -147,7 +148,6 @@ int main() {
 				if(num.size() > 0){
 					receivedID = std::stol(num);
 				}
-				// cout << "receivedID: " << receivedID << endl;
 				ui.printo("receivedID: " + std::to_string(receivedID) + "\n");
 
 				if(receivedID == 0 || IDs.find(receivedID) == IDs.end()){
@@ -159,11 +159,12 @@ int main() {
 
 					sockReads[i]->async_write(&randNum, sizeof(uint32_t));
 
-					IDsFileW << randNum << ":NULL\n";
-					IDsFileW.flush();
+					std::ofstream IDsFileWApp;
+					IDsFileWApp.open("IDs", std::ios::app);
+					IDsFileWApp << randNum << ":NULL\n";
+					IDsFileWApp.close();
 
 					assert(IDs.emplace(randNum, "NULL").second);
-					// cout << "New ID: " << randNum << ", With name: NULL" << endl;
 					ui.printo("New ID: "+std::to_string(randNum)+", With name: NULL\n");
 
 				}else{
@@ -171,17 +172,45 @@ int main() {
 					sockReads[i]->async_write(&receivedID, sizeof(uint32_t)); // echo the Device ID that was received
 				}
 			}else{
-				// cout << "Main, Message: " << static_cast<char*>(buffp->data());
 				ui.printo("Main, Message: " + std::string(static_cast<char*>(buffp->data())));
 				assert(strcmp((char*)buffp->data(), "<420,20.019199,5.232000\n") == 0);
 			}
 			free_buffer(buffp);
 		}
 
+		// resolve ready name futures
+		bool updatedAName = false;
+		for(auto futures_it = nameFutures.begin(); futures_it != nameFutures.end(); futures_it++){
+			if(nameFutures[i].wait_for(std::chrono::seconds(0)) == std::future_status::ready){
+				for(auto ids_it = IDs.begin(); ids_it != IDs.end(); ids_it++){
+
+					if(ids_it->second == "NULL"){
+
+						ids_it->second = futures_it->get();
+						updatedAName = true;
+
+						auto future_del = futures_it;
+						futures_it--;
+						nameFutures.erase(future_del);
+
+						goto nextfuture;
+					}
+				}
+			}
+			nextfuture:;
+		}
+
+		if(updatedAName){
+
+			std::ofstream IDsFileW;
+			IDsFileW.open("IDs", std::ios::trunc);
+			mapToFile(IDsFileW, IDs);
+			IDsFileW.close();
+		}
+
 		//check for Ctrl-c aka sigint
 		if(sigintFlag){
 			mainRet = 0;
-			// cout << "SIGINT Received, shutting down" << endl;
 			ui.printo("SIGINT Received, shutting down");
 			break;
 		}
@@ -194,7 +223,6 @@ int main() {
 		if(tdiff < MIN_LOOP_TIME_MS){
 			std::this_thread::sleep_for(std::chrono::milliseconds(MIN_LOOP_TIME_MS - tdiff));
 		}
-		// cout << "Time spent in loop: " << tdiff << endl;
 		loopTime = std::clock();
 	}
 
@@ -204,12 +232,10 @@ int main() {
 	});
 
 	//write file
-	IDsFileW.close();
+	std::ofstream IDsFileW;
 	IDsFileW.open("IDs", std::ios::trunc);
-	for(auto i = IDs.begin(); i != IDs.end(); i++){
-
-		IDsFileW << i->first << ':' << i->second << '\n';
-	}
+	mapToFile(IDsFileW, IDs);
+	IDsFileW.close();
 
 	// close sockets
 	for(int i = sockReads.size()-1; i >= 0; i--){
@@ -219,14 +245,11 @@ int main() {
 
 	//deinit
 	ioContext.stop();
-	// cout << "Stopping network service" << endl;
-	ui.printoImmediate("Stopping network servicen\n");
+	ui.printoImmediate("Stopping network service\n");
 	ioConThr.join();
 
-	// cout << "Stopping mdns service" << endl;
 	ui.printoImmediate("Stopping mdns servicen\n");
 	mdnsStopTh.join();
-	// cout << "Mdns service stopped" << endl;
 	ui.printoImmediate("Mdns service stopped\n");
 
 	return mainRet;
