@@ -1,6 +1,5 @@
 #include <cassert>
 #include <cstring>
-#include <iostream>
 #include <ncurses.h>
 #include <string>
 #include <cstring>
@@ -12,7 +11,6 @@ cursesUi::cursesUi(){
 	initscr();
 	noecho();
 	cbreak();
-	// scrollok(stdscr, true);
 	nodelay(stdscr, true);
 	currentCols = COLS;
 	currentLines = LINES;
@@ -46,6 +44,12 @@ void cursesUi::update(){
 
 	char newchar = -1;
 
+	// set between command input and name input
+	std::string * inputstr = &namestr;
+	if(!nameQueue.size()){
+		inputstr = &cmdstr;
+	}
+
 	newchar = getch();
 	while(newchar != ERR){
 		changedSinceUpdate = true;
@@ -53,29 +57,31 @@ void cursesUi::update(){
 		switch(newchar){
 			case 127:
 			case '\b':{
-				if(namestr.size()){
-					namestr.pop_back();
+				if(inputstr->size()){
+					inputstr->pop_back();
 				}
 				break;
 			}
 			case '\n':{
-				nameQueue.front().set_value(namestr);
-				nameQueue.erase(nameQueue.begin());
-				namestr = "";
+				if(inputstr == &namestr){
+					nameQueue.front().set_value(*inputstr);
+					nameQueue.erase(nameQueue.begin());
+				}
+				if(inputstr == &cmdstr){
+					;
+				}
+				*inputstr = "";
 				break;
 			}
 			default:{
-				if(namestr.size() == MAX_NAME_LEN){
+				if((inputstr->size() == MAX_NAME_LEN && inputstr == &namestr)){
 					break;
-				}else if(isalnum(newchar)){
-					namestr += newchar;
-				}else{
-					std::cout << "unexpected character in input buffer: " << newchar << std::endl;
+				}else if(isprint(newchar)){
+					*inputstr += newchar;
 				}
 				break;
 			}
 		}
-
 		newchar = getch();
 	}
 
@@ -103,24 +109,25 @@ void cursesUi::update(){
 	mvwprintw(commandWin, 0, 1, "Command");
 	mvwprintw(outputWin, 0, 1, "Output");
 
+	wmove(commandWin, currentLines - 3, 1);
+	whline(commandWin, ACS_HLINE, (currentCols/2) - 2);
+
+	mvwprintw(commandWin, currentLines-2, 1, "%s", cmdstr.c_str());
+
 	if(nameQueue.size()){
 		box(nameInputWin, 0, 0);
 		mvwprintw(nameInputWin, 0, 1, "Device Name Input");
 		mvwprintw(nameInputWin, 1, 1, "%s", namestr.c_str());
 		move((currentLines/2)-(NAME_INPUT_BOX_HEIGHT/2)+1, (currentCols/2)-(NAME_INPUT_BOX_WIDTH/2)+1+namestr.size());
 	}else{
-		move(currentLines, 1);
+		move(currentLines-2, cmdstr.size()+1);
 	}
 
 	refresh();
-	// wrefresh(outputWin);
-	// wrefresh(commandWin);
-	// if(nameQueue.size()) wrefresh(nameInputWin);
 	wnoutrefresh(outputWin);
 	wnoutrefresh(commandWin);
 	if(nameQueue.size()) wnoutrefresh(nameInputWin);
 	doupdate();
-
 
 	changedSinceUpdate = false;
 }

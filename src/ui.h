@@ -44,4 +44,5 @@ private:
 
 	std::vector<std::promise<std::string>> nameQueue;
 	std::string namestr;
+	std::string cmdstr;
 };
