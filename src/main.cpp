@@ -208,6 +208,12 @@ int main() {
 			IDsFileW.close();
 		}
 
+		// check for new command
+		std::string commandString = ui.getCommand();
+		if(commandString != ""){
+			ui.printc("############# Command Entered: " + commandString);
+		}
+
 		//check for Ctrl-c aka sigint
 		if(sigintFlag){
 			mainRet = 0;
@@ -215,7 +221,6 @@ int main() {
 			break;
 		}
 
-		fflush(stdout);
 		ui.update();
 
 		std::clock_t current = std::clock();

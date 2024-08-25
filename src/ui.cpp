@@ -27,6 +27,9 @@ cursesUi::~cursesUi(){
 	for(int i = 0; i < numOutputStrs; i++){
 		delete[] outputStrs[i];
 	}
+	for(int i = 0; i < numCommandOutputStrs; i++){
+		delete[] commandOutputStrs[i];
+	}
 	numOutputStrs = 0;
 	endwin();
 }
@@ -50,6 +53,7 @@ void cursesUi::update(){
 		inputstr = &cmdstr;
 	}
 
+	// handle inputs
 	newchar = getch();
 	while(newchar != ERR){
 		changedSinceUpdate = true;
@@ -64,11 +68,15 @@ void cursesUi::update(){
 			}
 			case '\n':{
 				if(inputstr == &namestr){
-					nameQueue.front().set_value(*inputstr);
-					nameQueue.erase(nameQueue.begin());
+					if(namestr != ""){
+						nameQueue.front().set_value(namestr);
+						nameQueue.erase(nameQueue.begin());
+					}
 				}
 				if(inputstr == &cmdstr){
-					;
+					if(cmdstr != ""){
+						commands.push_back(cmdstr);
+					}
 				}
 				*inputstr = "";
 				break;
@@ -100,6 +108,15 @@ void cursesUi::update(){
 	while(i >= 0 && printlinenum < currentLines-1){
 
 		mvwprintw(outputWin, printlinenum, 1, "%s", outputStrs[i]);
+		i--;
+		printlinenum++;
+	}
+
+	printlinenum = 1;
+	i = numCommandOutputStrs-1;
+	while(i >= 0 && printlinenum < currentLines-3){
+
+		mvwprintw(commandWin, printlinenum, 1, "%s", commandOutputStrs[i]);
 		i--;
 		printlinenum++;
 	}
@@ -174,6 +191,38 @@ void cursesUi::printoImmediate(std::string str){
 	printo(str);
 	update();
 }
+
+void cursesUi::printc(char const * const str){
+
+	int len = strlen(str);
+	char * ourstr = new char[len+1];
+	
+	for(int i = 0; i <= len; i++){
+		ourstr[i] = str[i];
+	}
+
+	constexpr int halfMax = MAX_OUTPUT_STRINGS/2;
+
+	// if full, delete half the strings
+	if(numCommandOutputStrs == MAX_OUTPUT_STRINGS){
+
+		for(int i = halfMax; i < MAX_OUTPUT_STRINGS; i++){
+
+			delete[] commandOutputStrs[i-halfMax];
+			commandOutputStrs[i-halfMax] = commandOutputStrs[i];
+			numCommandOutputStrs--;
+		}
+	}
+	commandOutputStrs[numCommandOutputStrs] = ourstr;
+	numCommandOutputStrs++;
+
+	changedSinceUpdate = true;
+}
+
+void cursesUi::printc(std::string str){
+	printc(str.c_str());
+}
+
 std::future<std::string> cursesUi::getDeviceName(){
 
 	std::promise<std::string> namePromise;
@@ -182,6 +231,17 @@ std::future<std::string> cursesUi::getDeviceName(){
 	changedSinceUpdate = true;
 
 	return tmpFut;
+}
+
+std::string cursesUi::getCommand(){
+
+	if(commands.size()){
+		std::string tmp = std::move(commands.front());
+		commands.erase(commands.begin());
+		return tmp;
+	}
+
+	return "";
 }
 
 void cursesUi::resize_helper(int cols, int lines){

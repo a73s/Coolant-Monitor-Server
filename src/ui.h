@@ -22,7 +22,10 @@ public:
 	void printo(std::string str);
 	void printoImmediate(char const * const str);
 	void printoImmediate(std::string str);
-	std::future<std::string>getDeviceName();
+	void printc(char const * const str);
+	void printc(std::string str);
+	std::future<std::string> getDeviceName();
+	std::string getCommand();
 	
 	~cursesUi();
 
@@ -39,10 +42,15 @@ private:
 	int currentLines = 0;
 
 	bool changedSinceUpdate = false;
+
 	char * outputStrs[MAX_OUTPUT_STRINGS];
 	int numOutputStrs = 0;
 
+	char * commandOutputStrs[MAX_OUTPUT_STRINGS];
+	int numCommandOutputStrs = 0;
+
 	std::vector<std::promise<std::string>> nameQueue;
+	std::vector<std::string> commands;
 	std::string namestr;
 	std::string cmdstr;
 };
