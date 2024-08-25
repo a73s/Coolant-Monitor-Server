@@ -8,6 +8,7 @@
 #include <map>
 #include <ctime>
 #include <future>
+#include <cassert>
 
 #include "asio/ip/tcp.hpp"
 
@@ -211,7 +212,7 @@ int main() {
 		// check for new command
 		std::string commandString = ui.getCommand();
 		if(commandString != ""){
-			ui.printc("############# Command Entered: " + commandString);
+			ui.printc("> " + commandString);
 		}
 
 		//check for Ctrl-c aka sigint

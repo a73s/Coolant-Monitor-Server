@@ -16,7 +16,7 @@ cursesUi::cursesUi(){
 	currentLines = LINES;
 
 	commandWin = newwin(LINES, COLS/2, 0, 0);
-	outputWin = newwin(LINES, COLS/2, 0, COLS/2 );
+	outputWin = newwin(LINES, COLS/2, 0, COLS/2);
 	nameInputWin = newwin(NAME_INPUT_BOX_HEIGHT, NAME_INPUT_BOX_WIDTH, (LINES/2)-(NAME_INPUT_BOX_HEIGHT/2), (COLS/2)-(NAME_INPUT_BOX_WIDTH/2));
 
 	changedSinceUpdate = true;
@@ -101,35 +101,48 @@ void cursesUi::update(){
 	wclear(outputWin);
 	wclear(commandWin);
 	wclear(nameInputWin);
-	
-	int printlinenum = 1;
-	int i = numOutputStrs-1;
 
-	while(i >= 0 && printlinenum < currentLines-1){
+	//draw contents
+	// it looks convoluded but this is how you get them to scroll backwards the exact same way a normal terminal looks
+	int printlinenum = 1;
+	int i = 0;
+	if(numOutputStrs > currentLines -2){
+		i = (numOutputStrs)-(currentLines-2);
+	}else{
+		printlinenum = (currentLines-1)-numOutputStrs;
+	}
+
+	while(printlinenum < currentLines-1 && i < numOutputStrs){
 
 		mvwprintw(outputWin, printlinenum, 1, "%s", outputStrs[i]);
-		i--;
+		i++;
 		printlinenum++;
 	}
 
 	printlinenum = 1;
-	i = numCommandOutputStrs-1;
-	while(i >= 0 && printlinenum < currentLines-3){
-
-		mvwprintw(commandWin, printlinenum, 1, "%s", commandOutputStrs[i]);
-		i--;
-		printlinenum++;
+	i = 0;
+	if(numCommandOutputStrs > currentLines -4){
+		i = (numCommandOutputStrs)-(currentLines-4);
+	}else{
+		printlinenum = (currentLines-3)-numCommandOutputStrs;
 	}
 
-	box(commandWin, 0, 0);
+	while(printlinenum < currentLines-3 && i < numCommandOutputStrs){
+
+		mvwprintw(commandWin, printlinenum, 1, "%s", commandOutputStrs[i]);
+		i++;
+		printlinenum++;
+	}
+	
+	// draw bounds and command box
 	box(outputWin, 0, 0);
+	box(commandWin, 0, 0);
 	mvwprintw(commandWin, 0, 1, "Command");
 	mvwprintw(outputWin, 0, 1, "Output");
 
 	wmove(commandWin, currentLines - 3, 1);
 	whline(commandWin, ACS_HLINE, (currentCols/2) - 2);
-
-	mvwprintw(commandWin, currentLines-2, 1, "%s", cmdstr.c_str());
+	mvwprintw(commandWin, currentLines-2, 1, "%c %s", '>', cmdstr.c_str());
 
 	if(nameQueue.size()){
 		box(nameInputWin, 0, 0);
@@ -137,9 +150,10 @@ void cursesUi::update(){
 		mvwprintw(nameInputWin, 1, 1, "%s", namestr.c_str());
 		move((currentLines/2)-(NAME_INPUT_BOX_HEIGHT/2)+1, (currentCols/2)-(NAME_INPUT_BOX_WIDTH/2)+1+namestr.size());
 	}else{
-		move(currentLines-2, cmdstr.size()+1);
+		move(currentLines-2, cmdstr.size()+3);
 	}
 
+	// actually update the screen
 	refresh();
 	wnoutrefresh(outputWin);
 	wnoutrefresh(commandWin);
