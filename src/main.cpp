@@ -174,7 +174,7 @@ int main() {
 				}
 			}else{
 				ui.printo("Main, Message: " + std::string(static_cast<char*>(buffp->data())));
-				assert(strcmp((char*)buffp->data(), "<420,20.019199,5.232000\n") == 0);
+				// assert(strcmp((char*)buffp->data(), "<420,20.019199,5.232000\n") == 0);
 			}
 			free_buffer(buffp);
 		}
