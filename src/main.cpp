@@ -9,6 +9,7 @@
 #include <ctime>
 #include <future>
 #include <cassert>
+#include <curl/curl.h>
 
 #include "asio/ip/tcp.hpp"
 
@@ -20,11 +21,9 @@
 #include "ui.h"
 #include "utils.h"
 
-// using std::cout;
-// using std::endl;
 using tcpip = asio::ip::tcp;
 
-constexpr uint16_t PORT = 46239;
+constexpr uint16_t MDNS_PORT = 46239;
 
 constexpr short LOOPS_PER_SEC = 15;
 constexpr short MIN_LOOP_TIME_MS = 1000/LOOPS_PER_SEC;
@@ -34,6 +33,7 @@ volatile bool sigintFlag = false;
 int main() {
 
 	// INIT stuff
+	CURL* curl = curl_easy_init();
 
 	// read device IDs from file
 	cursesUi ui;
@@ -68,7 +68,7 @@ int main() {
 	srand(time(NULL));
 	int mainRet = 0;
 	asio::io_context ioContext;
-	a_socket_receiver sockManv4(ioContext, tcpip::endpoint(tcpip::v4(), PORT));
+	a_socket_receiver sockManv4(ioContext, tcpip::endpoint(tcpip::v4(), MDNS_PORT));
 	std::vector <a_socket_rw *> sockReads;
 
 	signal(
@@ -93,7 +93,7 @@ int main() {
 	);
 
 	mdns_cpp::mDNS mdns;
-	mdns.setServicePort(PORT);
+	mdns.setServicePort(MDNS_PORT);
 	mdns.setServiceHostname("ESP32CoolandtMonitorServer");
 	mdns.setServiceName("_esp32coolmon._tcp.local.");
 	mdns.startService();
@@ -254,9 +254,11 @@ int main() {
 	ui.printoImmediate("Stopping network service\n");
 	ioConThr.join();
 
-	ui.printoImmediate("Stopping mdns servicen\n");
+	ui.printoImmediate("Stopping mdns service, this may take a minute...\n");
+
 	mdnsStopTh.join();
-	ui.printoImmediate("Mdns service stopped\n");
+
+	curl_easy_cleanup(curl);
 
 	return mainRet;
 }

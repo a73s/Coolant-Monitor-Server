@@ -8,6 +8,7 @@ Author: Adam Seals
 #include <fstream>
 #include <map>
 #include <string>
+#include <curl/curl.h>
 
 const bool DEBUG = true;
 
@@ -17,3 +18,5 @@ const bool DEBUG = true;
 unsigned int generateRand(const unsigned long & min, const unsigned long & max);
 
 void mapToFile(std::ofstream & file, const std::map<uint32_t, std::string>);
+
+bool sendtext(CURL * curl_handle, std::string phone_num, std::string message, std::string api_key, std::string sender);
