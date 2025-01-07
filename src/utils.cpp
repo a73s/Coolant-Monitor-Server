@@ -31,7 +31,7 @@ bool sendtext(CURL * curl_handle, std::string phone_num, std::string message, st
 	curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, slist1);
 	curl_easy_setopt(curl_handle, CURLOPT_URL, "https://textbelt.com/text");
 	curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, json.c_str());
-	CURLcode ret = curl_easy_perform(curl_handle);
+	curl_easy_perform(curl_handle);
 
 	return true;
 }

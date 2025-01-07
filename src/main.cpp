@@ -35,9 +35,27 @@ int main() {
 	// INIT stuff
 	CURL* curl = curl_easy_init();
 
+	//Retrieve api key for automated texting
+	std::ifstream apiFile("apikey.txt");
+	std::string apiKey = "";
+	if(apiFile.is_open()){
+		apiFile >> apiKey;
+		if(std::isspace(apiKey.back())){
+			apiKey.pop_back();
+		}
+	}else{
+		std::cout << "Failed to Retrieve api key. Shutting down" << std::endl;
+		exit(1);
+	}
+	apiFile.close();
+
 	// read device IDs from file
 	cursesUi ui;
 	std::ifstream IDsFileR("IDs");
+	if(!IDsFileR.is_open()){
+		std::cout << "Failed to open IDs file. Shutting down" << std::endl;
+		exit(1);
+	}
 	std::map<uint32_t, std::string> IDs;
 	std::vector<std::future<std::string>> nameFutures;
 
@@ -211,6 +229,46 @@ int main() {
 
 		// check for new command
 		std::string commandString = ui.getCommand();
+
+		std::string firstArg = "";
+		for(size_t i = 0; !isspace(commandString[i]) && i < commandString.size(); i++){
+			firstArg += commandString[i];
+		}
+
+		//handle that command
+		if(commandString == "help"){
+			ui.printc("help - print this commands list");
+			ui.printc("rename <device id> <new name> - rename a device");
+			ui.printc("list - list all devices and names");
+		}
+		else if(commandString == "list"){
+			ui.printc("ID, Name");
+			for(auto it = IDs.begin(); it != IDs.end(); it++){
+				ui.printc(std::to_string(it->first) + ", " + it->second);
+			}
+		}
+		else if(firstArg == "rename"){
+
+			std::string id = "";
+
+			for(size_t i = 7; !isspace(commandString[i]) && i < commandString.size(); i++){
+				id += commandString[i];
+			}
+			unsigned int int_id = std::stoul(id);
+
+			std::string new_name = "";
+
+			for(size_t i = id.size()+8; i < commandString.size(); i++){
+				new_name += commandString[i];
+			}
+
+			for(auto it = IDs.begin(); it != IDs.end(); it++){
+				if(it->first == int_id){
+					it->second = new_name;
+				}
+			}
+		}
+
 		if(commandString != ""){
 			ui.printc("> " + commandString);
 		}
