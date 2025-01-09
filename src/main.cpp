@@ -20,6 +20,7 @@
 #include "a_socket_read.h"
 #include "ui.h"
 #include "utils.h"
+#include "data_handling.h"
 
 using tcpip = asio::ip::tcp;
 
@@ -49,22 +50,35 @@ int main() {
 	}
 	apiFile.close();
 
+	//Retrieve the list of phone numbers to be notified
+	std::ifstream phonesFileR("phones.txt");
+	std::vector<std::string> phones;
+	while(phonesFileR){
+		std::string phone;
+		std::getline(phonesFileR, phone);
+		for(size_t i = 0; i < phone.size(); i++){
+			if(!isdigit(phone[i])){
+				phone.erase(i);
+				i--;
+			}
+		}
+
+		phones.push_back(phone);
+	}
+
 	// read device IDs from file
 	cursesUi ui;
 	std::ifstream IDsFileR("IDs");
-	if(!IDsFileR.is_open()){
-		std::cout << "Failed to open IDs file. Shutting down" << std::endl;
-		exit(1);
-	}
 	std::map<uint32_t, std::string> IDs;
 	std::vector<std::future<std::string>> nameFutures;
+	std::vector<dataMonitor> dataMonitors;
 
 	std::string readStr = "";
 	
 	while(IDsFileR){
 
 		readStr = "";
-		IDsFileR >> readStr;
+		std::getline(IDsFileR, readStr);
 
 		uint32_t ID = 0;
 		std::string name = "";
@@ -73,6 +87,7 @@ int main() {
 			if(readStr[i] == ':'){
 				ID = stoul(readStr.substr(0, i), nullptr, 0);
 				name = readStr.substr(i+1);
+				break;
 			}
 		}
 		if(name == "NULL"){
@@ -126,8 +141,10 @@ int main() {
 			ui.printo("Main: New Socket\n");
 			a_socket_rw* tmp = new a_socket_rw(sockManv4.pop_socket_back());
 			sockReads.push_back(tmp);
+			dataMonitors.push_back(dataMonitor());
 		}
 
+		//delete dead sockets
 		int i = 0;
 		for(auto it = sockReads.begin(); it != sockReads.end(); ){
 			if((*it)->is_closing()){
@@ -137,12 +154,13 @@ int main() {
 				sockReads.erase(it);
 				delete tmp;
 				it = sockReads.begin();
+				//delete the data monitor associated with the socket
+				dataMonitors.erase(dataMonitors.begin()+i);
 				i = 0;
 			}else{
 				it++;
+				i++;
 			}
-
-			i++;
 		}
 
 		//Read from sockets, also check/assign ID
@@ -153,6 +171,10 @@ int main() {
 			size_t buffSize = sockReads[i]->pop_latest_buff(buffp);
 
 			if(buffp == nullptr) continue;
+
+			std::string messageString = static_cast<char*>(buffp->data());
+			//removes the newline at the end, partly because my ui cannot handle newlines...
+			messageString.pop_back();
 
 			if(isFirstRead){
 
@@ -184,17 +206,46 @@ int main() {
 					IDsFileWApp.close();
 
 					assert(IDs.emplace(randNum, "NULL").second);
+					sockReads[i]->device_ID = randNum;
 					ui.printo("New ID: "+std::to_string(randNum)+", With name: NULL\n");
+					nameFutures.push_back(ui.getDeviceName());
 
 				}else{
 
+					sockReads[i]->device_ID = receivedID;
 					sockReads[i]->async_write(&receivedID, sizeof(uint32_t)); // echo the Device ID that was received
 				}
 			}else{
-				ui.printo("Main, Message: " + std::string(static_cast<char*>(buffp->data())));
-				// assert(strcmp((char*)buffp->data(), "<420,20.019199,5.232000\n") == 0);
+
+				ui.printo("Main, Message: " + messageString + " from " + IDs.at(sockReads[i]->device_ID));
+				//actually handle the message
+				dataSet data = dataToFloat(messageString.c_str());
+				if(static_cast<char*>(buffp->data())[0] == '+'){
+
+					std::string message = "Manual Data Send:\\nTemperature: " + std::to_string(data.temp) + " degrees C\\nPressure: " + std::to_string(data.pressure) + " PSI\\nFlow Rate: " + std::to_string(data.flow) + " GPM";
+					sendtext(curl, "3143038851", message, apiKey, "CoolantMonitor");
+				}else{
+					dataMonitors[i].inturpretData(messageString.c_str());
+				}
 			}
 			free_buffer(buffp);
+		}
+
+		//Check for ready notifications
+		for(size_t i = 0; i < dataMonitors.size(); i++){
+			if(dataMonitors[i].timeOfNotification < time(NULL) && dataMonitors[i].timeOfNotification != 0){
+
+				std::string message = ":\\nTemperature: " + std::to_string(dataMonitors[i].previous.temp) + " degrees C\\nPressure: " + std::to_string(dataMonitors[i].previous.pressure) + " PSI\\nFlow Rate: " + std::to_string(dataMonitors[i].previous.flow) + " GPM";
+				dataMonitors[i].timeOfNotification = 0;
+
+				if(dataMonitors[i].machineIsOn){
+					message = "Machine Turned On" + message;
+				}else{
+					message = "Machine Turned Off" + message;
+				}
+
+				sendtext(curl, "3143038851", message, apiKey, "CoolantMonitor");
+			}
 		}
 
 		// resolve ready name futures
