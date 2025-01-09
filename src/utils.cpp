@@ -20,7 +20,7 @@ void mapToFile(std::ofstream & file, const std::map<uint32_t, std::string> map){
 	}
 }
 
-bool sendtext(CURL * curl_handle, std::string phone_num, std::string message, std::string api_key, std::string sender){
+bool sendText(CURL * const curl_handle, const std::string phone_num, const std::string message, const std::string api_key, const std::string sender){
 
 	const std::string json = "{\"phone\":\"" + phone_num + "\",\"message\":\"" + message + "\",\"key\":\"" + api_key + "\",\"sender\":\"" + sender + "\"}";
 
@@ -34,4 +34,18 @@ bool sendtext(CURL * curl_handle, std::string phone_num, std::string message, st
 	curl_easy_perform(curl_handle);
 
 	return true;
+}
+
+bool multiSendText(CURL * const curl_handle, const std::vector<std::string> phone_nums, const std::string message, const std::string api_key, const std::string sender){
+
+	bool ret = true;
+
+	for(size_t i = 0; i < phone_nums.size(); i++){
+		bool tmp = sendText(curl_handle, phone_nums[i], message, api_key, sender);
+		if(!tmp){
+			ret = false;
+		}
+	}
+
+	return ret;
 }

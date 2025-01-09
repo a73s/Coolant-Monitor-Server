@@ -223,7 +223,7 @@ int main() {
 				if(static_cast<char*>(buffp->data())[0] == '+'){
 
 					std::string message = "Manual Data Send:\\nTemperature: " + std::to_string(data.temp) + " degrees C\\nPressure: " + std::to_string(data.pressure) + " PSI\\nFlow Rate: " + std::to_string(data.flow) + " GPM";
-					sendtext(curl, "3143038851", message, apiKey, "CoolantMonitor");
+					multiSendText(curl, phones, message, apiKey, "CoolantMonitor");
 				}else{
 					dataMonitors[i].inturpretData(messageString.c_str());
 				}
@@ -244,7 +244,7 @@ int main() {
 					message = "Machine Turned Off" + message;
 				}
 
-				sendtext(curl, "3143038851", message, apiKey, "CoolantMonitor");
+				multiSendText(curl, phones, message, apiKey, "CoolantMonitor");
 			}
 		}
 
