@@ -45,7 +45,7 @@ void cursesUi::update(){
 		resize_helper(tmpcols, tmplines);
 	}
 
-	char newchar = -1;
+	signed char newchar = -1;
 
 	// set between command input and name input
 	std::string * inputstr = &namestr;
