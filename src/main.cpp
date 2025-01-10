@@ -251,7 +251,7 @@ int main() {
 		// resolve ready name futures
 		bool updatedAName = false;
 		for(auto futures_it = nameFutures.begin(); futures_it != nameFutures.end(); futures_it++){
-			if(nameFutures[i].wait_for(std::chrono::seconds(0)) == std::future_status::ready){
+			if(futures_it->wait_for(std::chrono::seconds(0)) == std::future_status::ready){
 				for(auto ids_it = IDs.begin(); ids_it != IDs.end(); ids_it++){
 
 					if(ids_it->second == "NULL"){
