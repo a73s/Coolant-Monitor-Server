@@ -45,12 +45,12 @@ dataSet dataToFloat(const char * str){
 		switch(state){
 			case 0:{
 
-				temp += str[runningIndex];
+				pressure += str[runningIndex];
 				break;
 			}
 			case 1:{
 
-				pressure += str[runningIndex];
+				temp += str[runningIndex];
 				break;
 			}
 			case 2:{
