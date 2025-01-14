@@ -3,7 +3,11 @@ Description=Coolant Monitor Server
 After=multi-user.target
 
 [Service]
-ExecStart=<path-to-executable>
+Type=forking
+ExecStart=/usr/bin/tmux new-session -s CoolantMonitor -d -c <path-containig-executable> <path-of-executable>
+ExecStop=/usr/bin/tmux kill-session -t CoolantMonitor
+User=adam
+WorkingDirectory=<path-containing-executable>
 
 [Install]
 WantedBy=multi-user.target
