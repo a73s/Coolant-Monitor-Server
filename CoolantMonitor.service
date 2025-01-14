@@ -4,7 +4,7 @@ After=multi-user.target
 
 [Service]
 Type=forking
-ExecStart=/usr/bin/tmux new-session -s CoolantMonitor -d -c <path-containig-executable> <path-of-executable>
+ExecStart=/usr/bin/tmux new-session -s CoolantMonitor -d -c <path-containing-executable> <path-of-executable>
 ExecStop=/usr/bin/tmux kill-session -t CoolantMonitor
 Restart=always
 User=adam
