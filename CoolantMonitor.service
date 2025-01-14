@@ -1,0 +1,9 @@
+[Unit]
+Description=Coolant Monitor Server
+After=multi-user.target
+
+[Service]
+ExecStart=<path-to-executable>
+
+[Install]
+WantedBy=multi-user.target
