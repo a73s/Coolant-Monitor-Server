@@ -222,7 +222,7 @@ int main() {
 				dataSet data = dataToFloat(messageString.c_str());
 				if(static_cast<char*>(buffp->data())[0] == '+'){
 
-					std::string message = "Manual Data Send:\\nTemperature: " + std::to_string(data.temp) + " degrees C\\nPressure: " + std::to_string(data.pressure) + " PSI\\nFlow Rate: " + std::to_string(data.flow) + " GPM";
+					std::string message = "Manual Data Send from device \"" + IDs.at(sockReads[i]->device_ID) + "\":\\nTemperature: " + std::to_string(data.temp) + " degrees C\\nPressure: " + std::to_string(data.pressure) + " PSI\\nFlow Rate: " + std::to_string(data.flow) + " GPM";
 					multiSendText(curl, phones, message, apiKey, "CoolantMonitor");
 				}else{
 					dataMonitors[i].inturpretData(messageString.c_str());
@@ -239,9 +239,9 @@ int main() {
 				dataMonitors[i].timeOfNotification = 0;
 
 				if(dataMonitors[i].machineIsOn){
-					message = "Machine Turned On" + message;
+					message = "Machine Turned On from device \"" + IDs.at(sockReads[i]->device_ID) + "\"" + message;
 				}else{
-					message = "Machine Turned Off" + message;
+					message = "Machine Turned Off from device \"" + IDs.at(sockReads[i]->device_ID) + "\""  + message;
 				}
 
 				multiSendText(curl, phones, message, apiKey, "CoolantMonitor");
