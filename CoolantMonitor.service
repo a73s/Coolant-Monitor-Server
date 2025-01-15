@@ -1,6 +1,6 @@
 [Unit]
 Description=Coolant Monitor Server
-After=multi-user.target
+After=NetworkManager-wait-online.service
 
 [Service]
 Type=forking
