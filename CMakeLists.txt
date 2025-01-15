@@ -18,7 +18,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(PkgConfig REQUIRED)
 
 pkg_check_modules(CURSES REQUIRED IMPORTED_TARGET ncurses)
-pkg_check_modules(ASIO REQUIRED IMPORTED_TARGET asio)
 pkg_check_modules(CURL REQUIRED IMPORTED_TARGET libcurl)
 
 # find mdns_cpp dependency or install it as a git submodule
@@ -45,7 +44,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-O0")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
 add_executable(serverMonitor ${SOURCE_FILES})
-target_link_libraries(serverMonitor PRIVATE mdns_cpp::mdns_cpp PkgConfig::CURSES PkgConfig::ASIO PkgConfig::CURL)
+target_link_libraries(serverMonitor PRIVATE mdns_cpp::mdns_cpp PkgConfig::CURSES PkgConfig::CURL)
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
