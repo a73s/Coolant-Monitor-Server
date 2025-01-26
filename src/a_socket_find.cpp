@@ -5,7 +5,7 @@
 #include "a_socket_find.h"
 
 using tcpip = asio::ip::tcp;
-using std::cout;
+using std::cerr;
 using std::endl;
 
 tcpip::socket a_socket_receiver::pop_socket_back() {
@@ -37,10 +37,10 @@ void a_socket_receiver::async_receive() {
 		{
 
 			if(e){
-				cout << "async_accept error " << e.value() << ": " << e.message() << endl;
+				cerr << "async_accept error " << e.value() << ": " << e.message() << endl;
 				return;
 			}else{
-				cout << "Successfully accepted socket" << endl;
+				cerr << "Successfully accepted socket" << endl;
 
 				mutex_newSockets.lock();
 

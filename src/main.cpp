@@ -174,7 +174,7 @@ int main() {
 
 			std::string messageString = static_cast<char*>(buffp->data());
 			//removes the newline at the end, partly because my ui cannot handle newlines...
-			messageString.pop_back();
+			// messageString.pop_back();
 
 			if(isFirstRead){
 
@@ -222,7 +222,12 @@ int main() {
 				dataSet data = dataToFloat(messageString.c_str());
 				if(static_cast<char*>(buffp->data())[0] == '+'){
 
-					std::string message = "Manual Data Send from device \"" + IDs.at(sockReads[i]->device_ID) + "\":\\nTemperature: " + std::to_string(data.temp) + " degrees C\\nPressure: " + std::to_string(data.pressure) + " PSI\\nFlow Rate: " + std::to_string(data.flow) + " GPM";
+					std::string message = "Manual Data Send from device \"" +
+						IDs.at(sockReads[i]->device_ID) + "\":\\nTemperature: "
+						+ std::to_string(data.temp) + " degrees C\\nPressure: "
+						+ std::to_string(data.pressure) + " PSI\\nFlow Rate: "
+						+ std::to_string(data.flow) + " GPM";
+
 					multiSendText(curl, phones, message, apiKey, "CoolantMonitor");
 				}else{
 					dataMonitors[i].inturpretData(messageString.c_str());
@@ -235,7 +240,13 @@ int main() {
 		for(size_t i = 0; i < dataMonitors.size(); i++){
 			if(dataMonitors[i].timeOfNotification < time(NULL) && dataMonitors[i].timeOfNotification != 0){
 
-				std::string message = ":\\nTemperature: " + std::to_string(dataMonitors[i].previous.temp) + " degrees C\\nPressure: " + std::to_string(dataMonitors[i].previous.pressure) + " PSI\\nFlow Rate: " + std::to_string(dataMonitors[i].previous.flow) + " GPM";
+				std::string message = ":\\nTemperature: " +
+					std::to_string(dataMonitors[i].previous.temp) + " degrees C\\nPressure: " +
+					std::to_string(dataMonitors[i].previous.pressure) +
+					" PSI\\nFlow Rate: " +
+					std::to_string(dataMonitors[i].previous.flow) +
+					" GPM";
+
 				dataMonitors[i].timeOfNotification = 0;
 
 				if(dataMonitors[i].machineIsOn){

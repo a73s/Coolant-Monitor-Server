@@ -8,7 +8,7 @@
 #define TIMEOUT_SECONDS 60
 
 using tcpip = asio::ip::tcp;
-using std::cout; using std::endl;
+using std::endl; using std::cerr;
 
 // The job of this function is, given a new buffer and the leftovers from the previous buffers (stored in messageBuff)
 // to set up buff to contain only the most recent newline-seperated "message"
@@ -61,6 +61,8 @@ inline bool manageMessageBuffers(char * const messageBuff, uint32_t messagebuffm
 			}
 		}
 
+		// FIX: check that the buffer is big enough, should probably switch to a normal c string rather than asio buffer
+
 		//copy latest message back into buffer;
 		for(uint16_t i = latestMessageStartIndex; i <= lastNewlineCharIndex; i++){
 			static_cast<char*>(buff->data())[i - latestMessageStartIndex] = messageBuff[i];
@@ -68,7 +70,7 @@ inline bool manageMessageBuffers(char * const messageBuff, uint32_t messagebuffm
 
 		//add null terminator on buffer
 		for(uint16_t i = 1; i < messagebuffmax; i++){
-			if(static_cast<char*>(buff->data())[i-1] == '\n'){
+			if(static_cast<char*>(buff->data())[i] == '\n'){
 				static_cast<char*>(buff->data())[i] = '\0';
 				break;
 			}
@@ -110,7 +112,7 @@ size_t a_socket_rw::pop_latest_buff(asio::mutable_buffer * & buff) {
 
 	if(difftime(time(NULL), TimeOfLastMsg) > TIMEOUT_SECONDS){
 
-		cout << "Socket timed out" << endl;
+		cerr << "Socket timed out" << endl;
 		our_socket.close();
 	}
 
@@ -165,21 +167,21 @@ void a_socket_rw::async_write(void const * const buff, size_t size_bytes) {
 					this->TimeOfLastMsg = time(NULL);
 					if(sendsize != buffptr->size()){
 
-						cout << "Data sent was less than expected, sendsize: " << sendsize << ", buffsize:" << buffptr->size() << endl;
+						cerr << "Data sent was less than expected, sendsize: " << sendsize << ", buffsize:" << buffptr->size() << endl;
 					}
 
 					break;
 				}
 				case 2:{
 
-					cout << "Socket closed by client" << endl;
+					cerr << "Socket closed by client" << endl;
 
 					this->our_socket.close();
 					break;
 				}
 				case 125:{
 
-					cout << "Async socket send canceled" << endl;
+					cerr << "Async socket send canceled" << endl;
 
 					this->our_socket.close();
 
@@ -187,7 +189,7 @@ void a_socket_rw::async_write(void const * const buff, size_t size_bytes) {
 				}
 				default:{
 
-					cout << "Unhandled async_send error " << e.value() << ": " << e.message() << endl;
+					cerr << "Unhandled async_send error " << e.value() << ": " << e.message() << endl;
 
 					this->our_socket.close();
 
@@ -242,7 +244,7 @@ void a_socket_rw::async_read() {
 				}
 				case 2:{//closed by client
 
-					cout << "Socket closed by client" << endl;
+					cerr << "Socket closed by client" << endl;
 					this->our_socket.close();
 					this->numOutStandingOps--;
 
@@ -250,7 +252,7 @@ void a_socket_rw::async_read() {
 				}
 				case 125:{//operation aborted
 
-					cout << "Async socket read cancelled" << endl;
+					cerr << "Async socket read cancelled" << endl;
 					this->our_socket.close();
 					this->numOutStandingOps--;
 
@@ -258,7 +260,7 @@ void a_socket_rw::async_read() {
 				}
 				default:{//other error
 
-					cout << "Unhandled async_receive error " << e.value() << ": " << e.message() << endl;
+					cerr << "Unhandled async_receive error " << e.value() << ": " << e.message() << endl;
 					this->our_socket.close();
 					this->numOutStandingOps--;
 					break;
