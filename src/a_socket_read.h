@@ -1,14 +1,11 @@
 #pragma once
 
-#include <iostream>
 #include <vector>
 #include <utility>
 
 #include <asio.hpp>
 
 using tcpip = asio::ip::tcp;
-using std::cout;
-using std::endl;
 
 constexpr int maxReadSize = 256;
 
@@ -28,7 +25,7 @@ class a_socket_rw{
 	// YOU OWN THE BUFFER NOW!!!
 	// You must free it with free_buffer()
 	// this function will give you only the latest buffer, then delete the rest
-	size_t pop_latest_buff(asio::mutable_buffer * & buff);
+	size_t pop_latest_buff(char * & buff);
 
 	// self explanitory, writes to socket asynchronously and handles the result
 	void async_write(void const * const buff, size_t size_bytes);
@@ -40,8 +37,7 @@ class a_socket_rw{
 
 	private:
 	std::mutex mutex_this;
-	std::vector<asio::mutable_buffer *> newBuffers;
-	std::vector<size_t> buffSizes;
+	std::vector<char *> newBuffers;
 	tcpip::socket our_socket;
 	time_t TimeOfLastMsg = time(NULL);//time since laste messageg
 	int numOutStandingOps = 0;
