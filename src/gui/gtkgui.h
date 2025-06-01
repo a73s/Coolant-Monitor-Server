@@ -4,6 +4,7 @@
 #include <gtkmm/entry.h>
 #include <gtkmm/enums.h>
 #include <gtkmm/headerbar.h>
+#include <gtkmm/scrolledwindow.h>
 #include <gtkmm/textbuffer.h>
 #include <gtkmm/textview.h>
 #include <sigc++/functors/mem_fun.h>
@@ -11,7 +12,7 @@
 
 #include <future>
 
-#define MARGIN_PX 4
+#define MARGIN_PX 5
 
 class CGuiWindow
 {
@@ -43,11 +44,18 @@ private:
 
 	Gtk::Window m_window;
 	Gtk::HeaderBar m_titleBar;
-	Gtk::Box m_topLevelBox;
+	Gtk::Box m_halfSeperatorBox;
+	Gtk::Box m_leftSideBox;
+	Gtk::Box m_rightSideBox;
+	Gtk::Box m_commandOutputBox;
 	Gtk::Box m_outputBox;
-	Gtk::Box m_commandBox;
-	Gtk::Frame m_frame;
-	Gtk::TextView m_textView;
+	Gtk::ScrolledWindow m_outputScrolledWindow;
+	Gtk::ScrolledWindow m_commandOutputScrolledWindow;
+	Gtk::TextView m_outputTextView;
+	Gtk::TextView m_commandOutputTextView;
+	Gtk::Box m_commandInputBox;
+	Gtk::Frame m_commandOutputFrame;
+	Gtk::Frame m_outputFrame;
 	Gtk::Button m_commandButton;
 	Gtk::Entry m_commandEntry;
 };

@@ -1,6 +1,7 @@
 #include "gtkgui.h"
 #include <glibmm/dispatcher.h>
 #include <glibmm/ustring.h>
+#include <gtkmm/enums.h>
 #include <gtkmm/textbuffer.h>
 #include <iostream>
 #include <mutex>
@@ -17,7 +18,7 @@ void CGuiWindow::onPrinto(){
 
 	if(m_strsToPrint.size()){
 
-		Glib::RefPtr<Gtk::TextBuffer> buff = m_textView.get_buffer();
+		Glib::RefPtr<Gtk::TextBuffer> buff = m_outputTextView.get_buffer();
 		Gtk::TextBuffer::iterator iter = buff->get_iter_at_offset(0);
 		char * toPrint = *m_strsToPrint.begin();
 		m_strsToPrint.erase(m_strsToPrint.begin());
@@ -40,33 +41,62 @@ CGuiWindow::CGuiWindow()
 {
 	m_window.set_titlebar(m_titleBar);
 	m_window.set_title("Coolant Monitor Server");
-	m_window.set_default_size(200, 200);
-	m_window.set_child(m_topLevelBox);
+	m_window.set_default_size(900, 600);
+	m_window.set_child(m_halfSeperatorBox);
 
-	m_topLevelBox.set_orientation(Gtk::Orientation::VERTICAL);
-	m_topLevelBox.append(m_outputBox);
-	m_topLevelBox.append(m_commandBox);
+	m_halfSeperatorBox.set_orientation(Gtk::Orientation::HORIZONTAL);
+	m_halfSeperatorBox.append(m_leftSideBox);
+	m_halfSeperatorBox.append(m_rightSideBox);
+	m_halfSeperatorBox.set_homogeneous();
+
+	m_leftSideBox.set_orientation(Gtk::Orientation::VERTICAL);
+	m_leftSideBox.append(m_commandOutputBox);
+	m_leftSideBox.append(m_commandInputBox);
+
+	m_rightSideBox.set_orientation(Gtk::Orientation::VERTICAL);
+	m_rightSideBox.append(m_outputBox);
 
 	m_outputBox.set_margin(MARGIN_PX);
-	m_outputBox.set_margin_bottom(0);
+	m_outputBox.set_margin_start(0);
 	m_outputBox.set_orientation(Gtk::Orientation::VERTICAL);
-	m_outputBox.append(m_frame);
+	m_outputBox.append(m_outputFrame);
 
-	m_frame.set_child(m_textView);
+	m_commandOutputBox.set_margin(MARGIN_PX);
+	m_commandOutputBox.set_margin_bottom(0);
+	m_commandOutputBox.set_orientation(Gtk::Orientation::VERTICAL);
+	m_commandOutputBox.append(m_commandOutputFrame);
 
-	m_textView.set_margin(0);
-	m_textView.set_pixels_above_lines(3);
-	m_textView.set_pixels_below_lines(3);
-	m_textView.set_left_margin(3);
-	m_textView.set_right_margin(3);
-	m_textView.set_editable(false);
-	m_textView.set_focusable(false);
-	m_textView.set_wrap_mode(Gtk::WrapMode::WORD);
-	m_textView.set_expand(true);
+	m_commandOutputFrame.set_child(m_commandOutputScrolledWindow);
 
-	m_commandBox.set_margin(MARGIN_PX);
-	m_commandBox.append(m_commandEntry);
-	m_commandBox.append(m_commandButton);
+	m_commandOutputScrolledWindow.set_child(m_commandOutputTextView);
+
+	m_outputFrame.set_child(m_outputScrolledWindow);
+
+	m_outputScrolledWindow.set_child(m_outputTextView);
+
+	m_outputTextView.set_margin(0);
+	m_outputTextView.set_pixels_above_lines(3);
+	m_outputTextView.set_pixels_below_lines(3);
+	m_outputTextView.set_left_margin(3);
+	m_outputTextView.set_right_margin(3);
+	m_outputTextView.set_editable(false);
+	m_outputTextView.set_focusable(false);
+	m_outputTextView.set_wrap_mode(Gtk::WrapMode::WORD);
+	m_outputTextView.set_expand(true);
+
+	m_commandOutputTextView.set_margin(0);
+	m_commandOutputTextView.set_pixels_above_lines(3);
+	m_commandOutputTextView.set_pixels_below_lines(3);
+	m_commandOutputTextView.set_left_margin(3);
+	m_commandOutputTextView.set_right_margin(3);
+	m_commandOutputTextView.set_editable(false);
+	m_commandOutputTextView.set_focusable(false);
+	m_commandOutputTextView.set_wrap_mode(Gtk::WrapMode::WORD);
+	m_commandOutputTextView.set_expand(true);
+
+	m_commandInputBox.set_margin(MARGIN_PX);
+	m_commandInputBox.append(m_commandEntry);
+	m_commandInputBox.append(m_commandButton);
 
 	m_commandEntry.set_hexpand(true);
 	m_commandEntry.signal_activate().connect(sigc::mem_fun(*this, &CGuiWindow::onEnterHit));
