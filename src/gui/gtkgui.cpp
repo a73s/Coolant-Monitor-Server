@@ -14,12 +14,17 @@ void CGuiWindow::run(int argc , char** argv){
 void CGuiWindow::onPrinto(){
 
 	std::scoped_lock lock(m_memberMutex);
-	if(m_strToPrint != nullptr){
+
+	if(m_strsToPrint.size()){
 
 		Glib::RefPtr<Gtk::TextBuffer> buff = m_textView.get_buffer();
-		Gtk::TextBuffer::iterator iter = buff->get_iter_at_offset(buff->get_char_count());
-		buff->insert(iter, m_strToPrint);
+		Gtk::TextBuffer::iterator iter = buff->get_iter_at_offset(0);
+		char * toPrint = *m_strsToPrint.begin();
+		m_strsToPrint.erase(m_strsToPrint.begin());
+		buff->insert(iter, toPrint);
 		// TODO: shorten the output if it gets too long
+
+		delete[] toPrint;
 	}
 }
 
@@ -84,22 +89,18 @@ void CGuiWindow::printo(char const * const str){
 	{
 		std::scoped_lock lock(m_memberMutex);
 
-		if(m_strToPrint != nullptr){
-			delete[] m_strToPrint;
-			m_strToPrint = nullptr;
-		}
-
 		if(str != nullptr){
 			int len = strlen(str);
-			m_strToPrint = new char[len+1];
+			char * tmpstr = new char[len+1];
 			
 			for(int i = 0; i <= len; i++){
-				m_strToPrint[i] = str[i];
+				tmpstr[i] = str[i];
 			}
+			m_strsToPrint.push_back(tmpstr);
 		}
-
-		m_printoDispatcher.emit();
 	}
+
+	m_printoDispatcher.emit();
 }
 
 void CGuiWindow::printo(std::string str){

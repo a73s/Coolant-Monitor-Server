@@ -1,7 +1,6 @@
 #include "gui/gtkgui.h"
 #include "primary.h"
 #include <thread>
-#include <iostream>
 #include <thread>
 
 CGuiWindow ui;

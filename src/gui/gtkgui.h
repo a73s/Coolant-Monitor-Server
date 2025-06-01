@@ -37,7 +37,7 @@ private:
 	void onEnterHit();
 	Glib::Dispatcher m_printoDispatcher;
 	Glib::RefPtr<Gtk::Application> m_app = Gtk::Application::create("Coolant Monitor");
-	char * m_strToPrint = nullptr;
+	std::vector<char *> m_strsToPrint;
 
 	std::mutex m_memberMutex;
 
