@@ -4,7 +4,7 @@
 #include <string>
 #include <cstring>
 
-#include "ui.h"
+#include "cursesui.h"
 
 cursesUi::cursesUi(){
 
@@ -97,13 +97,13 @@ void cursesUi::update(){
 
 	if(!changedSinceUpdate) return;
 
-	clear();
+	/*clear();*/
 	wclear(outputWin);
 	wclear(commandWin);
 	wclear(nameInputWin);
 
-	//draw contents
-	// it looks convoluded but this is how you get them to scroll backwards the exact same way a normal terminal looks
+	/*draw contents*/
+	/*it looks convoluded but this is how you get them to scroll backwards the exact same way a normal terminal looks*/
 	int printlinenum = 1;
 	int i = 0;
 	if(numOutputStrs > currentLines -2){
