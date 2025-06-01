@@ -3,42 +3,12 @@
 #include <glibmm/ustring.h>
 #include <gtkmm/enums.h>
 #include <gtkmm/textbuffer.h>
-#include <iostream>
 #include <mutex>
 #include <sigc++/functors/mem_fun.h>
 
-void CGuiWindow::run(int argc , char** argv){
-
-	m_app->run(argc, argv);
-}
-
-void CGuiWindow::onPrinto(){
-
-	std::scoped_lock lock(m_memberMutex);
-
-	if(m_strsToPrint.size()){
-
-		Glib::RefPtr<Gtk::TextBuffer> buff = m_outputTextView.get_buffer();
-		Gtk::TextBuffer::iterator iter = buff->get_iter_at_offset(0);
-		char * toPrint = *m_strsToPrint.begin();
-		m_strsToPrint.erase(m_strsToPrint.begin());
-		buff->insert(iter, toPrint);
-		// TODO: shorten the output if it gets too long
-
-		delete[] toPrint;
-	}
-}
-
-void CGuiWindow::onSubmitButtonHit(){
-	std::cout << m_commandEntry.get_buffer()->get_text() << std::endl;
-}
-
-void CGuiWindow::onEnterHit(){
-	std::cout << m_commandEntry.get_buffer()->get_text() << std::endl;
-}
-
 CGuiWindow::CGuiWindow()
 {
+	// std::scoped_lock lock(m_memberMutex);
 	m_window.set_titlebar(m_titleBar);
 	m_window.set_title("Coolant Monitor Server");
 	m_window.set_default_size(900, 600);
@@ -107,11 +77,73 @@ CGuiWindow::CGuiWindow()
 	m_commandButton.signal_clicked().connect(sigc::mem_fun(*this, &CGuiWindow::onSubmitButtonHit));
 
 	m_printoDispatcher.connect(sigc::mem_fun(*this, &CGuiWindow::onPrinto));
+	m_printcDispatcher.connect(sigc::mem_fun(*this, &CGuiWindow::onPrintc));
 
 	m_app->signal_activate().connect([&](){
 		m_app->add_window(m_window);
 		m_window.show();
 	});
+}
+
+CGuiWindow::~CGuiWindow(){
+	while(m_strsToPrintCommandOutput.size()){
+		delete[] m_strsToPrintCommandOutput[0];
+		m_strsToPrintCommandOutput.erase(m_strsToPrintCommandOutput.begin());
+	}
+
+	while(m_strsToPrintOutput.size()){
+		delete[] m_strsToPrintOutput[0];
+		m_strsToPrintOutput.erase(m_strsToPrintOutput.begin());
+	}
+}
+
+void CGuiWindow::run(int argc , char** argv){
+
+	m_app->run(argc, argv);
+}
+
+void CGuiWindow::onPrinto(){
+
+	std::scoped_lock lock(m_memberMutex);
+
+	if(m_strsToPrintOutput.size()){
+
+		Glib::RefPtr<Gtk::TextBuffer> buff = m_outputTextView.get_buffer();
+		Gtk::TextBuffer::iterator iter = buff->get_iter_at_offset(0);
+		char * toPrint = *m_strsToPrintOutput.begin();
+		m_strsToPrintOutput.erase(m_strsToPrintOutput.begin());
+		buff->insert(iter, toPrint);
+		// TODO: shorten the output if it gets too long
+
+		delete[] toPrint;
+	}
+}
+
+void CGuiWindow::onPrintc(){
+
+	std::scoped_lock lock(m_memberMutex);
+
+	if(m_strsToPrintCommandOutput.size()){
+
+		Glib::RefPtr<Gtk::TextBuffer> buff = m_commandOutputTextView.get_buffer();
+		Gtk::TextBuffer::iterator iter = buff->get_iter_at_offset(0);
+		char * toPrint = *m_strsToPrintCommandOutput.begin();
+		m_strsToPrintCommandOutput.erase(m_strsToPrintCommandOutput.begin());
+		buff->insert(iter, toPrint);
+		// TODO: shorten the output if it gets too long
+
+		delete[] toPrint;
+	}
+}
+
+void CGuiWindow::onSubmitButtonHit(){
+	std::scoped_lock lock(m_memberMutex);
+	m_commands.push_back(std::string(m_commandEntry.get_buffer()->get_text().c_str()));
+}
+
+void CGuiWindow::onEnterHit(){
+	std::scoped_lock lock(m_memberMutex);
+	m_commands.push_back(std::string(m_commandEntry.get_buffer()->get_text().c_str()));
 }
 
 void CGuiWindow::printo(char const * const str){
@@ -126,7 +158,7 @@ void CGuiWindow::printo(char const * const str){
 			for(int i = 0; i <= len; i++){
 				tmpstr[i] = str[i];
 			}
-			m_strsToPrint.push_back(tmpstr);
+			m_strsToPrintOutput.push_back(tmpstr);
 		}
 	}
 
@@ -148,7 +180,22 @@ void CGuiWindow::printoImmediate(std::string str){
 }
 
 void CGuiWindow::printc(char const * const str){
-	//TODO:
+
+	{
+		std::scoped_lock lock(m_memberMutex);
+
+		if(str != nullptr){
+			int len = strlen(str);
+			char * tmpstr = new char[len+1];
+			
+			for(int i = 0; i <= len; i++){
+				tmpstr[i] = str[i];
+			}
+			m_strsToPrintCommandOutput.push_back(tmpstr);
+		}
+	}
+
+	m_printcDispatcher.emit();
 }
 
 void CGuiWindow::printc(std::string str){
@@ -157,6 +204,7 @@ void CGuiWindow::printc(std::string str){
 
 std::future<std::string> CGuiWindow::getDeviceName(){
 
+	std::scoped_lock lock(m_memberMutex);
 	//TODO:
 	std::promise<std::string> namePromise;
 	std::future<std::string> tmpFut = namePromise.get_future();
@@ -166,6 +214,11 @@ std::future<std::string> CGuiWindow::getDeviceName(){
 
 std::string CGuiWindow::getCommand(){
 
-	//TODO:
-	return "command";
+	std::scoped_lock lock(m_memberMutex);
+	if(m_commands.size()){
+		std::string tmp = std::move(m_commands.front());
+		m_commands.erase(m_commands.begin());
+		return tmp;
+	}
+	return "";
 }

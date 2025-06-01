@@ -18,6 +18,7 @@ class CGuiWindow
 {
 public:
 	CGuiWindow();
+	~CGuiWindow();
 
 	void update(){}
 	void run(int argc , char** argv);
@@ -31,16 +32,23 @@ public:
 	std::future<std::string> getDeviceName();
 	std::string getCommand();
 
-	void onPrinto();
-
 private:
+	void onPrinto();
+	void onPrintc();
 	void onSubmitButtonHit();
 	void onEnterHit();
-	Glib::Dispatcher m_printoDispatcher;
-	Glib::RefPtr<Gtk::Application> m_app = Gtk::Application::create("Coolant Monitor");
-	std::vector<char *> m_strsToPrint;
 
 	std::mutex m_memberMutex;
+
+	std::vector<char *> m_strsToPrintOutput;
+	std::vector<char *> m_strsToPrintCommandOutput;
+
+	std::vector<std::promise<std::string>> m_nameQueue;
+	std::vector<std::string> m_commands;
+
+	Glib::RefPtr<Gtk::Application> m_app = Gtk::Application::create("Coolant Monitor");
+	Glib::Dispatcher m_printoDispatcher;
+	Glib::Dispatcher m_printcDispatcher;
 
 	Gtk::Window m_window;
 	Gtk::HeaderBar m_titleBar;
