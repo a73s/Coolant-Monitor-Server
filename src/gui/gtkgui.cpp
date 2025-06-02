@@ -6,6 +6,8 @@
 #include <mutex>
 #include <sigc++/functors/mem_fun.h>
 
+#define MAX_OUTPUT_LEN 8192
+
 CGuiWindow::CGuiWindow()
 {
 	// std::scoped_lock lock(m_memberMutex);
@@ -113,7 +115,11 @@ void CGuiWindow::onPrinto(){
 		char * toPrint = *m_strsToPrintOutput.begin();
 		m_strsToPrintOutput.erase(m_strsToPrintOutput.begin());
 		buff->insert(iter, toPrint);
-		// TODO: shorten the output if it gets too long
+		if(buff->size() > MAX_OUTPUT_LEN){
+			iter = buff->get_iter_at_offset(MAX_OUTPUT_LEN/2);
+			Gtk::TextBuffer::iterator iter2 = buff->end();
+			buff->erase(iter, iter2);
+		}
 
 		delete[] toPrint;
 	}
@@ -130,7 +136,11 @@ void CGuiWindow::onPrintc(){
 		char * toPrint = *m_strsToPrintCommandOutput.begin();
 		m_strsToPrintCommandOutput.erase(m_strsToPrintCommandOutput.begin());
 		buff->insert(iter, toPrint);
-		// TODO: shorten the output if it gets too long
+		if(buff->size() > MAX_OUTPUT_LEN){
+			iter = buff->get_iter_at_offset(MAX_OUTPUT_LEN/2);
+			Gtk::TextBuffer::iterator iter2 = buff->end();
+			buff->erase(iter, iter2);
+		}
 
 		delete[] toPrint;
 	}

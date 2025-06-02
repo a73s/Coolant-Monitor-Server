@@ -147,7 +147,7 @@ int primary() {
 		for(auto it = sockReads.begin(); it != sockReads.end(); ){
 			if((*it)->is_closing()){
 
-				ui.printo("Deleting socket " + std::to_string(i) + "\n");
+				ui.printo("Deleting socket " + std::to_string(i) + '\n');
 				a_socket_rw * tmp = *it;
 				sockReads.erase(it);
 				delete tmp;
@@ -213,7 +213,7 @@ int primary() {
 				}
 			}else{
 
-				ui.printo("Main, Message: " + messageString + " from " + IDs.at(sockReads[i]->device_ID));
+				ui.printo("Main, Message: " + messageString + " from " + IDs.at(sockReads[i]->device_ID) + '\n');
 				//actually handle the message
 				dataSet data = dataToFloat(messageString.c_str());
 				if(buffp[0] == '+'){
@@ -295,14 +295,14 @@ int primary() {
 
 		//handle that command
 		if(commandString == "help"){
-			ui.printc("help - print this commands list");
-			ui.printc("rename <device id> <new name> - rename a device");
-			ui.printc("list - list all devices and names");
+			ui.printc("list - list all devices and names\n");
+			ui.printc("rename <device id> <new name> - rename a device\n");
+			ui.printc("help - print this commands list\n");
 		}
 		else if(commandString == "list"){
-			ui.printc("ID, Name");
+			ui.printc("ID, Name\n");
 			for(auto it = IDs.begin(); it != IDs.end(); it++){
-				ui.printc(std::to_string(it->first) + ", " + it->second);
+				ui.printc(std::to_string(it->first) + ", " + it->second + '\n');
 			}
 		}
 		else if(firstArg == "rename"){
@@ -328,13 +328,13 @@ int primary() {
 		}
 
 		if(commandString != ""){
-			ui.printc("> " + commandString);
+			ui.printc("> " + commandString + '\n');
 		}
 
 		//check for Ctrl-c aka sigint
 		if(sigintFlag){
 			mainRet = 0;
-			ui.printo("SIGINT Received, shutting down");
+			ui.printo("SIGINT Received, shutting down\n");
 			break;
 		}
 
