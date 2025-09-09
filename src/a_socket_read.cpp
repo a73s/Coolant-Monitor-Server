@@ -16,7 +16,7 @@ using std::endl; using std::cerr;
 // the number of bytes in buff is returned through ret_messageSize
 //
 // There is an assumption that the message is text so anything after the first null byte will be cut off
-inline char * manageMessageBuffers(char * const messageBuff, uint32_t messagebuffmax, asio::mutable_buffer * const buff, size_t readsize, uint16_t & ret_messageSize){
+inline bool manageMessageBuffers(char * const messageBuff, uint32_t messagebuffmax, asio::mutable_buffer * const buff, size_t readsize, uint16_t & ret_messageSize){
 
 	//sorry but this is a doozy
 
@@ -29,7 +29,7 @@ inline char * manageMessageBuffers(char * const messageBuff, uint32_t messagebuf
 		messageBuff[0] = '\0';
 		static_cast<char*>( buff->data() )[0] = '\0';
 		ret_messageSize = 0;
-		return nullptr;
+		return false;
 	}
 
 	// concatinate buff->data onto messagebuff
@@ -42,6 +42,7 @@ inline char * manageMessageBuffers(char * const messageBuff, uint32_t messagebuf
 
 	// assert(mbufflen == strlen(messageBuff));
 	mbufflen = strlen(messageBuff);
+
 	// identify the last full message by finding final newline
 	int16_t lastNewlineCharIndex = -1;
 	for(uint16_t i = 0; i < mbufflen; i++){
@@ -60,17 +61,17 @@ inline char * manageMessageBuffers(char * const messageBuff, uint32_t messagebuf
 			}
 		}
 
-		char * returnStringBuffer = new char [lastNewlineCharIndex - latestMessageStartIndex];
+		// FIX: check that the buffer is big enough, should probably switch to a normal c string rather than asio buffer
 
 		//copy latest message back into buffer;
 		for(uint16_t i = latestMessageStartIndex; i <= lastNewlineCharIndex; i++){
-			returnStringBuffer[i - latestMessageStartIndex] = messageBuff[i];
+			static_cast<char*>(buff->data())[i - latestMessageStartIndex] = messageBuff[i];
 		}
 
 		//add null terminator on buffer
 		for(uint16_t i = 1; i < messagebuffmax; i++){
-			if(returnStringBuffer[i] == '\n'){
-				returnStringBuffer[i] = '\0';
+			if(static_cast<char*>(buff->data())[i] == '\n'){
+				static_cast<char*>(buff->data())[i] = '\0';
 				break;
 			}
 		}
@@ -80,18 +81,18 @@ inline char * manageMessageBuffers(char * const messageBuff, uint32_t messagebuf
 			messageBuff[i-(lastNewlineCharIndex + 1)] = messageBuff[i];
 		}
 
-		ret_messageSize = lastNewlineCharIndex - latestMessageStartIndex;
+		ret_messageSize = lastNewlineCharIndex - latestMessageStartIndex + 1;
 
-		assert(ret_messageSize == strlen(returnStringBuffer));
+		assert(ret_messageSize == strlen(static_cast<char*>(buff->data())));
 
-		return returnStringBuffer;
+		return true;
 	}
-	return nullptr;
+	return false;
 }
 
 // YOU OWN THE BUFFER NOW!!!
 // You must free it with free_buffer()
-size_t a_socket_rw::pop_latest_buff(char * & buff) {
+size_t a_socket_rw::pop_latest_buff(asio::mutable_buffer * & buff) {
 
 	mutex_this.lock();
 
@@ -99,9 +100,10 @@ size_t a_socket_rw::pop_latest_buff(char * & buff) {
 	if(newBuffers.size() > 0 && (numOutStandingOps > 0)){
 
 		buff = newBuffers.back();
-		size = strlen(buff);
+		size = buffSizes.back();
 
 		newBuffers.pop_back();
+		buffSizes.pop_back();
 
 		flush_helper();
 
@@ -232,8 +234,9 @@ void a_socket_rw::async_read() {
 
 					uint16_t messageSize = 0;
 
-					if(char * newbuff = manageMessageBuffers(this->messageBuff, sizeof this->messageBuff, buff, readsize, messageSize)){
-						newBuffers.push_back(newbuff);
+					if(manageMessageBuffers(this->messageBuff, sizeof this->messageBuff, buff, readsize, messageSize)){
+						newBuffers.push_back(buff);
+						buffSizes.push_back(messageSize);
 					}
 
 					this->async_read();
@@ -275,8 +278,9 @@ void a_socket_rw::async_read() {
 void a_socket_rw::flush_helper(){
 
 	while(newBuffers.size() > 0){
-		delete[] newBuffers.back();
+		free_buffer(newBuffers.back());
 		newBuffers.pop_back();
+		buffSizes.pop_back();
 	}
 }
 

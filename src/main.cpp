@@ -165,22 +165,24 @@ int main() {
 
 		//Read from sockets, also check/assign ID
 		for(size_t i = 0; i < sockReads.size(); i++){
-			char * buffp = nullptr;
+			asio::mutable_buffer * buffp = nullptr;
 			bool isFirstRead = sockReads[i]->isFirstRead;
 			// If there is no buffer to read then this will just give us nullptr on buffp
 			size_t buffSize = sockReads[i]->pop_latest_buff(buffp);
 
 			if(buffp == nullptr) continue;
 
-			std::string messageString = buffp; // TODO: investigate completely getting rid of messageString
+			std::string messageString = static_cast<char*>(buffp->data());
+			//removes the newline at the end, partly because my ui cannot handle newlines...
+			// messageString.pop_back();
 
 			if(isFirstRead){
 
 				std::string num = "";
 				for(size_t i = 0; i < buffSize; i++){
 					
-					if(!isdigit(buffp[i])) continue;
-					num.push_back(buffp[i]);
+					if(!isdigit(static_cast<char*>(buffp->data())[i])) continue;
+					num.push_back( static_cast<char*>( buffp->data() )[i] );
 				}
 
 				uint32_t receivedID = 0;
@@ -218,7 +220,7 @@ int main() {
 				ui.printo("Main, Message: " + messageString + " from " + IDs.at(sockReads[i]->device_ID));
 				//actually handle the message
 				dataSet data = dataToFloat(messageString.c_str());
-				if(buffp[0] == '+'){
+				if(static_cast<char*>(buffp->data())[0] == '+'){
 
 					std::string message = "Manual Data Send from device \"" +
 						IDs.at(sockReads[i]->device_ID) + "\":\\nTemperature: "
@@ -231,7 +233,7 @@ int main() {
 					dataMonitors[i].inturpretData(messageString.c_str());
 				}
 			}
-			delete[] buffp;
+			free_buffer(buffp);
 		}
 
 		//Check for ready notifications
