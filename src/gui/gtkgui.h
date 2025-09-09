@@ -66,4 +66,8 @@ private:
 	Gtk::Frame m_outputFrame;
 	Gtk::Button m_commandButton;
 	Gtk::Entry m_commandEntry;
+
+	Gtk::Dialog m_nameEntryWindow;
+	Gtk::Entry m_nameEntry;
+	Gtk::HeaderBar m_nameEntryBar;
 };

@@ -81,6 +81,15 @@ CGuiWindow::CGuiWindow()
 	m_printoDispatcher.connect(sigc::mem_fun(*this, &CGuiWindow::onPrinto));
 	m_printcDispatcher.connect(sigc::mem_fun(*this, &CGuiWindow::onPrintc));
 
+	// m_window.set_child(m_nameEntryWindow);
+	// m_nameEntryWindow.set_transient_for(m_window);
+	m_nameEntryWindow.set_default_size(200,100);
+	m_nameEntryWindow.set_resizable(false);
+	m_nameEntryWindow.set_child(m_nameEntry);
+	m_nameEntryWindow.set_titlebar(m_nameEntryBar);
+
+	m_nameEntry.set_margin(MARGIN_PX);
+
 	m_app->signal_activate().connect([&](){
 		m_app->add_window(m_window);
 		m_window.show();
@@ -216,9 +225,15 @@ std::future<std::string> CGuiWindow::getDeviceName(){
 
 	std::scoped_lock lock(m_memberMutex);
 	//TODO:
+
+	// m_window.set_child(m_nameEntryWindow);
+	// m_nameEntryWindow.show();
+
 	std::promise<std::string> namePromise;
 	std::future<std::string> tmpFut = namePromise.get_future();
-	namePromise.set_value("CUM");
+
+	m_nameQueue.push_back(std::move(namePromise));
+
 	return tmpFut;
 }
 
